@@ -1,0 +1,81 @@
+CREATE TABLE books(id int not null auto_increment primary key,
+                   author varchar(50) not null,
+                   title varchar(100) not null,
+                   publication varchar(50) not null,
+                   copies int not null,
+                   dateListed datetime default current_timestamp,
+                   price decimal(18,2) not null,
+                   status int not null default 1
+                  );
+
+create table roles(id int not null primary key auto_increment,
+                  title varchar(15) not null);
+
+
+create table users(id int not null auto_increment primary key,
+                   name varchar(100) not null,
+                   email varchar(150) not null,
+                   gender varchar(10) not null,
+                   address varchar(150),
+                   role_id int not null,
+                   read_book int not null default 0,
+                   joinDate datetime default current_timestamp,
+                   status int not null default 1,
+                   foreign key(role_id) references roles(id)
+		);
+
+
+
+create table issue_book(id int not null auto_increment primary key,
+                       user_id int not null,
+                       issue_date date default current_date,
+                       return_date date not null,
+                       book_id int not null,
+                       foreign key(user_id) references users(id),
+                       foreign key(book_id) references books(id),
+                       status int not null default 1
+                  );
+
+
+create table return_book(id int  not null auto_increment primary key,
+                        issue_id int not null,
+                        return_date date default current_date,
+                        comment varchar(256) not null,
+                        foreign key(issue_id) references issue_book(id)
+                       );
+
+
+
+
+create table lost_book(id int not null primary key auto_increment,
+                       book_id int not null,
+                       lost_date date not null default current_date,
+                       foreign key(book_id) references books(id)
+                      );
+
+CREATE TRIGGER after_issue_book
+AFTER INSERT ON issue_book FOR EACH ROW
+UPDATE users SET read_book = read_book + 1 WHERE id = new.user_id
+
+CREATE TRIGGER after_return_book
+AFTER INSERT ON return_book FOR EACH ROW
+UPDATE issue_book SET status = '0' WHERE id = new.issue_id
+
+CREATE TRIGGER after_lost_book
+AFTER INSERT ON lost_book FOR EACH ROW
+UPDATE books SET copies = copies - 1 WHERE id = new.book_id
+
+
+
+SELECT users.name, books.title, issue_book.status FROM users
+JOIN issue_book ON users.id = issue_book.user_id
+JOIN books ON issue_book.book_id = books.id
+WHERE users.id = 1;
+
+
+SELECT users.name, books.title book_read, issue_book.issue_date, return_book.return_date
+FROM users
+JOIN issue_book ON users.id = issue_book.user_id
+JOIN books ON issue_book.book_id = books.id
+JOIN return_book ON issue_book.id = return_book.issue_id
+WHERE users.name = 'roven'
